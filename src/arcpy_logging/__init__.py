@@ -4,98 +4,135 @@ __author__ = 'Joel McCune (https://github.com/knu2xs)'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2022 by Joel McCune (https://github.com/knu2xs)'
 
-__all__ = ['example_function', 'ExampleObject']
-
-# add specific imports below if you want to organize your code into modules, which is mostly what I do
-## from . import utils
-
-from typing import Union
+import importlib
+import logging
 from pathlib import Path
+from typing import Union, Optional
 
-import pandas as pd
+__all__ = ['get_logger']
+
+if importlib.util.find_spec("arcpy") is None:
+    has_arcpy = False
+else:
+    has_arcpy = True
+    import arcpy
+    __all__ = __all__ + ['ArcpyHandler']
 
 
-def example_function(in_path: Union[str, Path]) -> pd.DataFrame:
+class ArcpyHandler(logging.Handler):
     """
-    This is an example function, mostly to provide a template for properly
-    structuring a function and docstring for both you, and also for myself,
-    since I *almost always* have to look this up, and it's a *lot* easier
-    for it to be already templated.
+    Logging message handler capable of routing logging through ArcPy AddMessage, AddWarning and AddError methods.
+    """
+
+    # since everything goes through ArcPy methods, we do not need a message line terminator
+    terminator = ''
+
+    def __init__(self, level: Union[int, str] = 10):
+
+        # throw logical error if arcpy not available
+        if not has_arcpy:
+            raise EnvironmentError('The ArcPy handler requires an environment with ArcPy, a Python environment with '
+                                   'ArcGIS Pro or ArcGIS Enterprise.')
+
+        # call the parent to cover rest of any potential setup
+        super().__init__(level=level)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """
+        Args:
+            record: Record containing all information needed to emit a new logging event.
+
+        .. note::
+            This method should not be called directly, but rather enables the `Logger` methods to
+            be able to use this Handler correctly.
+
+        """
+        # run through the formatter to honor logging formatter settings
+        msg = self.format(record)
+
+        # route anything NOTSET (0), DEBUG (10) or INFO (20) through AddMessage
+        if record.levelno <= 20:
+            arcpy.AddMessage(msg)
+
+        # route all WARN (30) messages through AddWarning
+        elif record.levelno == 30:
+            arcpy.AddWarning(msg)
+
+        # everything else; ERROR (40), FATAL (50) and CRITICAL (50), route through AddError
+        else:
+            arcpy.AddError(msg)
+
+
+# setup logging
+def get_logger(
+        logger_name: Optional[str] = 'arcpy-logger',
+        log_level: Optional[Union[str, int]] = 'INFO',
+        logfile_pth: Union[Path, str] = None, propagate: bool = False
+) -> logging.Logger:
+    """
+    Get Python ``logging.Logger`` configured to provide both stream, file and, if available, ArcPy output.
+
+    Valid ``log_level`` inputs include:
+
+    * ``DEBUG`` - Detailed information, typically of interest only when diagnosing problems.
+    * ``INFO`` - Confirmation that things are working as expected.
+    * ``WARNING`` or ``WARN`` -  An indication that something unexpected happened, or indicative of some problem in the near future (e.g. ‘disk space low’). The software is still working as expected.
+    * ``ERROR`` - Due to a more serious problem, the software has not been able to perform some function.
+    * ``CRITICAL`` - A serious error, indicating that the program itself may be unable to continue running.
 
     Args:
-        in_path: Required path to something you really care about, or at least
-            want to exploit, a really big word used to simply say, *use*.
+        logger_name: Name for logger. Default is 'arcpy-logger'.
+        log_level: Logging level to use. Default is `'INFO'`.
+        logfile_pth: Where to save the logfile.log if file output is desired.
+        propagate: Whether to propagate message up to any parent loggers. Defaults to ``False`` to avoid repeated messages to ArcPy.
 
-    Returns:
-        Hypothetically, a Pandas Dataframe. Good luck with that.
-
-    .. code-block:: python
-
-        from arcpy_logging import example_function
-
-        pth = r'C:/path/to/some/table.csv'
-
-        df = example_function(pth)
+    Return:
+        Logger to use to provide status updates.
     """
-    return pd.read_csv(in_path)
+    # ensure valid logging level
+    log_str_lst = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'WARN', 'FATAL']
+    log_int_lst = [0, 10, 20, 30, 40, 50]
 
+    if not isinstance(log_level, (str, int)):
+        raise ValueError('You must define a specific logging level for log_level as a string or integer.')
+    elif isinstance(log_level, str) and log_level not in log_str_lst:
+        raise ValueError(f'The log_level must be one of {log_str_lst}. You provided "{log_level}".')
+    elif isinstance(log_level, int) and log_level not in log_int_lst:
+        raise ValueError(f'If providing an integer for log_level, it must be one of the following, {log_int_lst}.')
 
-class ExampleObject(object):
-    """
-    This is an example object, mostly to provide a template for properly
-    structuring a function and docstring for both you, and also for myself,
-    since I *almost always* have to look this up, and it's a *lot* easier
-    for it to be already templated.
-    """
+    # get a logger object instance
+    logger = logging.getLogger(logger_name)
 
-    def __init__(self, *args, **kwargs):
+    # set propagation
+    logger.propagate = propagate
 
-        # is not applicable in all cases, but I always have to look it up, so it is here for simplicity's sake
-        super().__init__(*args, **kwargs)
+    # set logging level
+    if isinstance(log_level, str):
+        log_level = getattr(logging, log_level)
+    logger.setLevel(log_level)
 
-    @staticmethod
-    def example_static_function(in_path: Union[str, Path]) -> pd.DataFrame:
-        """
-        This is an example function, mostly to provide a template for properly
-        structuring a function and docstring for both you, and also for myself,
-        since I *almost always* have to look this up, and it's a *lot* easier
-        for it to be already templated.
+    # configure formatting
+    log_frmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-        Args:
-            in_path: Required path to something you really care about, or at least
-                want to exploit, a really big word used to simply say, *use*.
+    # if in an environment with ArcPy, add handler to bubble logging up to ArcGIS through ArcPy
+    if has_arcpy:
+        ah = ArcpyHandler()
+        ah.setFormatter(log_frmt)
+        logger.addHandler(ah)
 
-        Returns:
-            Hypothetically, a Pandas Dataframe. Good luck with that.
+    # if a path for the logfile is provided, use it to log to a file
+    else:
+        fh = logging.FileHandler(str(logfile_pth))
+        fh.setFormatter(log_frmt)
+        logger.addHandler(fh)
 
-        .. code-block:: python
+    # create handler to console if not logging to a file and arcpy is not providing status
+    if logfile_pth is None and not has_arcpy:
+        ch = logging.StreamHandler()
+        ch.setFormatter(log_frmt)
+        logger.addHandler(ch)
 
-            from arcpy_logging import ExampleObject
+    # keep logging from bubbling up - keep messages just in these handlers
+    logger.propagate = False
 
-            pth = r'C:/path/to/some/table.csv'
-
-            df = ExampleObject.example_function(pth)
-        """
-        return pd.read_csv(in_path)
-
-    @classmethod
-    def example_class_method(cls):
-        """
-        Class methods prove really useful for when you need a method to
-        return an instance of the parent class. Again, I usually  have to
-        search for how to do this, so I also just put it in here.
-
-        Returns:
-            An instance of the class, duh!
-
-        .. code-block:: python
-
-            from from arcpy_logging import ExampleObject
-
-            pth = r'C:/path/to/some/table.csv'
-
-            obj_inst = ExampleObject.example_class_method()
-
-            df = obj_inst.example_function(pth)
-        """
-        return cls()
+    return logger
