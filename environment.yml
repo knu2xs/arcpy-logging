@@ -1,42 +1,17 @@
 name: arcpy_logging
 
 channels:
-  - esri
   - conda-forge
 
 dependencies:
-  - arcgis
-  - black>=21
-  - cookiecutter
-  - dask
-  - h3-py
-  - isort
-  - jupyterlab
-  - jupyterlab_code_formatter
-  - mkdocs
-  - munch
-  - nodejs
   - pip
   - pytest
   - python=3.9
-  - python-dotenv
-  - pyarrow
-  - pyyaml
-  - scipy
-  - scikit-learn
-  - seaborn
-  - shapely
-  - swifter
-  - tabulate
-  - tqdm
   - pip:
-    - azure-storage-blob
-    - boto3
     - bump2version
     - furo
     - ipykernel
     - nbsphinx
-    - placekey
     - sphinx
     - sphinx-autodoc-typehints
     - sphinx-copybutton
