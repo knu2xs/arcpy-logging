@@ -25,14 +25,14 @@ clean:
 
 ## Build the docs
 docs:
-	conda run -p ./env sphinx-build -a -b html docsrc/source docs
+	conda run -p ./env sphinx-build -a -b html docsrc docs
 	@echo ">>> Documents successfully built and saved to ./docs!"
 
 ## Build the local environment from the environment file
 env:
 	conda env create -p ./env -f environment.yml
 	conda run -p ./env pip install -e .
-	@echo ">>> New conda environment created. Activate with:\n- conda activate -p ./env"
+	@echo ">>> New conda environment created. Activate with:\n- conda activate ./env"
 
 ## Make it easier to clean up the project when finished
 env_remove:

@@ -66,10 +66,12 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
-     'sphinx.ext.viewcode',
+    'sphinx.ext.viewcode',
+    'sphinxcontrib.youtube',
     'sphinx_autodoc_typehints',
     'sphinx_copybutton',
-    'nbsphinx'
+    'nbsphinx',
+    'autodocsumm'
 ]
 
 intersphinx_mapping = {
