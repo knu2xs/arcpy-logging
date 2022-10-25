@@ -93,3 +93,4 @@ env/
 
 # ignore doc build directory
 docs/
+docsrc/notebooks/
