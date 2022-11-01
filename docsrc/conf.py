@@ -36,6 +36,7 @@ release = '0.1.0-dev0'
 # -- Copying notebooks for inclusion -----------------------------------------
 prj_dir = os.path.abspath('../')
 
+
 def all_but_ipynb(dir, contents):
     result = []
     for c in contents:
@@ -43,12 +44,15 @@ def all_but_ipynb(dir, contents):
             result += [c]
     return result
 
+
 shutil.rmtree(os.path.join(prj_dir, "docsrc", "notebooks"), ignore_errors=True)
-shutil.copytree(
-    os.path.join(prj_dir, "notebooks"),
-    os.path.join(prj_dir, "docsrc", "notebooks"),
-    ignore=all_but_ipynb
-)
+
+if os.path.exists(os.path.join(prj_dir, 'notebooks')):
+    shutil.copytree(
+        os.path.join(prj_dir, "notebooks"),
+        os.path.join(prj_dir, "docsrc", "notebooks"),
+        ignore=all_but_ipynb
+    )
 
 # -- General configuration -----------------------------------------------------
 
@@ -75,7 +79,8 @@ extensions = [
 ]
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None)
+    'python': ('https://docs.python.org/3', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/dev', None)
 }
 
 def skip(app, what, name, obj, would_skip, options):
@@ -239,7 +244,7 @@ nbsphinx_allow_errors = True
 autoclass_content = 'both'
 
 # enable building of docs on instances without arcpy (on a Mac when building docs)
-autodoc_mock_imports = ["arcpy", "arcgis"]
+autodoc_mock_imports = ["arcpy", "arcgis", "pandas"]
 
 # keep nbsphinx from trying to run notebooks with unrun cells
 nbsphinx_execute = 'never'

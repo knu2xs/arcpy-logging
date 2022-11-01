@@ -18,10 +18,18 @@ else:
     import arcpy
     __all__ = __all__ + ['ArcpyHandler']
 
+if importlib.util.find_spec("pandas") is None:
+    has_pandas = False
+else:
+    has_pandas = True
+    import pandas as pd
+    __all__ = __all__ + ['log_pandas_df']
+
 
 class ArcpyHandler(logging.Handler):
     """
-    Logging message handler capable of routing logging through ArcPy AddMessage, AddWarning and AddError methods.
+    Logging message handler capable of routing logging through ArcPy ``AddMessage``, ``AddWarning`` and ``AddError``
+    methods.
     """
 
     # since everything goes through ArcPy methods, we do not need a message line terminator
@@ -43,8 +51,9 @@ class ArcpyHandler(logging.Handler):
             record: Record containing all information needed to emit a new logging event.
 
         .. note::
-            This method should not be called directly, but rather enables the `Logger` methods to
-            be able to use this Handler correctly.
+
+            This method should not be called directly, but rather enables the ``Logger`` methods to
+            be able to use this handler correctly.
 
         """
         # run through the formatter to honor logging formatter settings
@@ -70,13 +79,18 @@ def get_logger(
         logfile_pth: Union[Path, str] = None, propagate: bool = False
 ) -> logging.Logger:
     """
-    Get Python ``logging.Logger`` configured to provide both stream, file and, if available, ArcPy output.
+    Get Python :class:`Logger<logging.Logger>` configured to provide stream, file or, if available, ArcPy output.
+    The way the method is set up, logging will be routed through ArcPy messaging using :class:`ArcpyHandler` if
+    ArcPy is available. If ArcPy is *not* available, messages will be sent to the console using a
+    :class:`StreamHandler<logging.StreamHandler>`. Next, if the ``logfile_path`` is provided, log messages will also
+    be written to the provided path to a logfile using a :class:`FileHandler<logging.FileHandler>`.
 
     Valid ``log_level`` inputs include:
 
     * ``DEBUG`` - Detailed information, typically of interest only when diagnosing problems.
     * ``INFO`` - Confirmation that things are working as expected.
-    * ``WARNING`` or ``WARN`` -  An indication that something unexpected happened, or indicative of some problem in the near future (e.g. ‘disk space low’). The software is still working as expected.
+    * ``WARNING`` or ``WARN`` -  An indication that something unexpected happened, or indicative of some problem in the
+      near future (e.g. ‘disk space low’). The software is still working as expected.
     * ``ERROR`` - Due to a more serious problem, the software has not been able to perform some function.
     * ``CRITICAL`` - A serious error, indicating that the program itself may be unable to continue running.
 
@@ -84,10 +98,9 @@ def get_logger(
         logger_name: Name for logger. Default is 'arcpy-logger'.
         log_level: Logging level to use. Default is `'INFO'`.
         logfile_pth: Where to save the logfile.log if file output is desired.
-        propagate: Whether to propagate message up to any parent loggers. Defaults to ``False`` to avoid repeated messages to ArcPy.
+        propagate: Whether to propagate message up to any parent loggers. Defaults to ``False`` to avoid repeated
+        messages to ArcPy.
 
-    Return:
-        Logger to use to provide status updates.
     """
     # ensure valid logging level
     log_str_lst = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'WARN', 'FATAL']
@@ -120,19 +133,40 @@ def get_logger(
         ah.setFormatter(log_frmt)
         logger.addHandler(ah)
 
-    # if a path for the logfile is provided, use it to log to a file
+    # create handler to console if arcpy is not providing status
     else:
-        fh = logging.FileHandler(str(logfile_pth))
-        fh.setFormatter(log_frmt)
-        logger.addHandler(fh)
-
-    # create handler to console if not logging to a file and arcpy is not providing status
-    if logfile_pth is None and not has_arcpy:
         ch = logging.StreamHandler()
         ch.setFormatter(log_frmt)
         logger.addHandler(ch)
+
+    # if a path for the logfile is provided, log results to the file
+    if logfile_pth is not None:
+
+        # ensure the full path exists
+        if not logfile_pth.parent.exists():
+            logfile_pth.parent.mkdir(parents=True)
+
+        # create and add the file handler
+        fh = logging.FileHandler(str(logfile_pth))
+        fh.setFormatter(log_frmt)
+        logger.addHandler(fh)
 
     # keep logging from bubbling up - keep messages just in these handlers
     logger.propagate = False
 
     return logger
+
+
+def log_pandas_df(logger: logging.Logger, pandas_df: pd.DataFrame, title: str, line_tab_prefix='\t\t') -> None:
+    """
+    Helper function facilitating outputting a :class:`Pandas DataFrame<pandas.DataFrame>` into a logfile. This typically
+    is used for including descriptive statistics in logfile outputs.
+
+    Args:
+        logger: Logger being used.
+        pandas_df: Pandas ``DataFrame`` to be converted to a string and included in the logfile.
+        title: String title describing the data frame.
+        line_tab_prefix: Optional string comprised of tabs (``\\t\\t``) to prefix each line with providing indentation.
+    """
+    log_str = line_tab_prefix.join(pandas_df.to_string(index=False).splitlines(True))
+    logger.info(f'{title}:\n{line_tab_prefix}{log_str}')

@@ -12,9 +12,10 @@ dir_test = self_pth.parent
 dir_prj = dir_test.parent
 dir_src = dir_prj/'src'
 
-# insert the src directory into the path and import the projct package
+# insert the src directory into the path and import the project package
 sys.path.insert(0, str(dir_src))
 import arcpy_logging
+
 
 def test_example():
     assert 2 + 2 == 4

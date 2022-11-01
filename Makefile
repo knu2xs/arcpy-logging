@@ -1,4 +1,4 @@
-.PHONY: data clean env_create env_export env_activate env_build test create_kernel
+.PHONY: data docs clean env_create env_export env_activate env_build test create_kernel
 
 #################################################################################
 # GLOBALS                                                                       #
