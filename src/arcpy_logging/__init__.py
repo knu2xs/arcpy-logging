@@ -99,7 +99,7 @@ def get_logger(
         log_level: Logging level to use. Default is `'INFO'`.
         logfile_pth: Where to save the logfile.log if file output is desired.
         propagate: Whether to propagate message up to any parent loggers. Defaults to ``False`` to avoid repeated
-        messages to ArcPy.
+          messages to ArcPy.
 
     """
     # ensure valid logging level
