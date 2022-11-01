@@ -8,7 +8,7 @@ setup(
     package_dir={"": "src"},
     packages=find_packages('src'),
     install_requires=['pandas'],
-    version='1.0.0-dev0',
+    version='1.0.0',
     description='Integrating ArcPy messaging into standard Python logging',
     long_description=long_description,
     author='Joel McCune (https://github.com/knu2xs)',
