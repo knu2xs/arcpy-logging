@@ -16,4 +16,4 @@ want to create your own logger, use the :class:`ArcpyHandler` object.
 .. automodule:: arcpy_logging
     :members:
 
-.. _ArcPy-Logging: https://github.com/knu2xs/arcpy-logger
+.. _ArcPy-Logging: https://github.com/knu2xs/arcpy-logging
