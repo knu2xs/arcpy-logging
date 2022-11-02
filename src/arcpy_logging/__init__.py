@@ -28,8 +28,25 @@ else:
 
 class ArcpyHandler(logging.Handler):
     """
-    Logging message handler capable of routing logging through ArcPy ``AddMessage``, ``AddWarning`` and ``AddError``
-    methods.
+    Logging message handler capable of routing logging through ArcPy AddMessage, AddWarning and AddError methods.
+    DEBUG and INFO logging messages are be handled by the AddMessage method. WARNING logging messages are handled
+    by the AddWarning method. ERROR and CRITICAL logging messages are handled by the AddError method.
+
+    Basic use consists of the following.
+
+    .. code-block:: python
+
+        logger = logging.getLogger('arcpy-logger')
+        logger.setLevel('INFO')
+
+        ah = ArcpyHandler()
+        logger.addHandler(ah)
+
+        logger.debug('nauseatingly detailed debugging message')
+        logger.info('something actually useful to know')
+        logger.warning('The sky may be falling')
+        logger.error('The sky is falling.)
+        logger.critical('The sky appears to be falling because a giant meteor is colliding with the earth.')
     """
 
     # since everything goes through ArcPy methods, we do not need a message line terminator
@@ -100,6 +117,17 @@ def get_logger(
         logfile_pth: Where to save the logfile.log if file output is desired.
         propagate: Whether to propagate message up to any parent loggers. Defaults to ``False`` to avoid repeated
           messages to ArcPy.
+
+    .. code-block:: python
+
+        # assuming part of python module
+        logger = get_logger(__name__)
+
+        logger.debug('nauseatingly detailed debugging message')
+        logger.info('something actually useful to know')
+        logger.warning('The sky may be falling')
+        logger.error('The sky is falling.)
+        logger.critical('The sky appears to be falling because a giant meteor is colliding with the earth.')
 
     """
     # ensure valid logging level
