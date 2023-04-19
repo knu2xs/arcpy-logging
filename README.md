@@ -2,7 +2,7 @@
 
 Integrating ArcPy messaging into standard Python logging.
 
-For more information and samples, pleasae take a look at the [ArcPy-Logging Documentation](https://knu2xs.github.io/arcpy-logger/).
+For more information and samples, pleasae take a look at the [ArcPy-Logging Documentation](https://knu2xs.github.io/arcpy-logging/).
 
 ## BumpVersion Cliff Notes for Myself
 
